@@ -17,8 +17,32 @@ def is_colliding(point, obstacles):
     for obs in obstacles:
         if euclidean(point, obs[0]) < obs[1]:
             return True
+        return False
+
+def line_circle_collision(p1, p2, center, radius):
+    d = np.array(p2) - np.array(p1)
+    f = np.array(p1) - center
+
+    a = np.dot(d, d)
+    b = 2*np.dot(f, d)
+    c = np.dot(f, f) - radius*radius
+
+    discimiant = b*b - 4*a*c
+    if discimiant < 0:
+        return False
+    
+    t1 = (-b - np.sqrt(discimiant)) / (2*a)
+    t2 = (-b + np.sqrt(discimiant)) / (2*a)
+
+    if (t1 >= 0 and t1 <= 1) or (t2 >= 0 and t2 <= 1):
+        return True
     return False
 
+def is_edge_colliding(p1, p2, obstacles):
+    for obs in obstacles:
+       if line_circle_collision(p1, p2, obs[0], obs[1]):
+           return True
+    return False
 
 def connect_nodes(nodes, max_distance, obstacles):
     edges = []
@@ -48,10 +72,10 @@ def prm(space_size, num_samples, max_distance, start, goal, obstacles):
 
     if nx.has_path(graph, tuple(start), tuple(goal)):
         path = nx.shortest_path(graph, tuple(start), tuple(goal), weight="distance")
-        return path
+        return path, nodes, edges
     else:
         print("No path found")
-        return None
+        return None, nodes, edges
     
 #########################
 
@@ -72,9 +96,9 @@ def plot_prm(start, goal, space_size, obstacles, nodes, edges, path):
     if path:
         plt.plot(*zip(*path), 'go-', lw=2)
 
-    plt.xlim()
-    plt.ylim()
-    plt.legend(loc='upper left')
+    plt.xlim(0, space_size)
+    plt.ylim(0, space_size)
+    plt.legend()
     plt.show()
 
 if __name__ == "__main__":
@@ -87,11 +111,10 @@ if __name__ == "__main__":
     obstacles = [(np.array([50, 50]), 10), (np.array([30, 70]), 5), (np.array([70, 30]), 5)]
 
 
-    path = prm(space_size, num_samples, max_distance, start, goal, obstacles)
+    path, nodes, edges = prm(space_size, num_samples, max_distance, start, goal, obstacles)
     if path:
         print("Path found!: ", path)
+        plot_prm(start, goal, space_size, obstacles, nodes, edges, path)
+    else:
+        print("No path found")
 
-    nodes = sample_free_space(space_size, num_samples, obstacles)
-    nodes = [start] + nodes + [goal]
-    edges = connect_nodes(nodes, max_distance, obstacles)
-    plot_prm(start, goal, space_size, obstacles, nodes, edges, path)
